@@ -306,6 +306,7 @@ function onboardingFixture() {
           [CHAIN_IDS.GOERLI]: true,
           [CHAIN_IDS.LOCALHOST]: true,
         },
+        openSeaTransactionSecurityProviderPopoverHasBeenShown: true,
       },
       NetworkController: {
         network: '1337',
