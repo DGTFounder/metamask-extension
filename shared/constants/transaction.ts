@@ -1,3 +1,5 @@
+import { AccessList } from '@ethereumjs/tx';
+
 export enum TransactionType {
   /**
    * A transaction submitted with the same nonce as a previous transaction, a
@@ -262,6 +264,12 @@ export interface TxParams {
   gas: string;
   /** Hexadecimal encoded string representing calls to the EVM's ABI */
   data?: string;
+  /**
+   * EIP-2930 https://eips.ethereum.org/EIPS/eip-2930 added the ability for
+   * transactions to specify which addresses they will interact with and allows
+   * for lower gas fees on specific opcodes. See the EIP for more details.
+   */
+  accessList?: AccessList;
 }
 
 export interface TxError {
@@ -344,6 +352,9 @@ export interface TransactionMeta {
    * on the network.
    */
   hash: string;
+  v?: string;
+  r?: string;
+  s?: string;
   /**
    * The time the transaction was submitted to the network, in Unix epoch time
    * (ms).
