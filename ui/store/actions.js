@@ -12,7 +12,7 @@ import {
 } from '../../shared/constants/app';
 import { hasUnconfirmedTransactions } from '../helpers/utils/confirm-tx.util';
 import txHelper from '../helpers/utils/tx-helper';
-import { getEnvironmentType, addHexPrefix } from '../../app/scripts/lib/util';
+import { getEnvironmentType, addHexPrefix, uint8ArrayMnemonicToString } from '../../app/scripts/lib/util';
 import {
   getMetaMaskAccounts,
   getPermittedAccountsForCurrentTab,
@@ -214,7 +214,8 @@ export function verifyPassword(password) {
 }
 
 export async function verifySeedPhrase() {
-  return await submitRequestToBackground('verifySeedPhrase');
+  const uint8ArraySeedPhrase = await submitRequestToBackground('verifySeedPhrase');
+  return uint8ArrayMnemonicToString(uint8ArraySeedPhrase)
 }
 
 export function requestRevealSeedWords(password) {

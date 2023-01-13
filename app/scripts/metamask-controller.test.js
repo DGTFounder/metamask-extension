@@ -12,7 +12,7 @@ import createTxMeta from '../../test/lib/createTxMeta';
 import { NETWORK_TYPES } from '../../shared/constants/network';
 import { KEYRING_TYPES } from '../../shared/constants/keyrings';
 import { DEVICE_NAMES } from '../../shared/constants/hardware-wallets';
-import { deferredPromise } from './lib/util';
+import { deferredPromise, uint8ArrayMnemonicToString } from './lib/util';
 
 const Ganache = require('../../test/e2e/ganache');
 
@@ -705,26 +705,41 @@ describe('MetaMaskController', function () {
   });
 
   describe('#verifyseedPhrase', function () {
-    it('errors when no keying is provided', async function () {
+    it('errors when no keyring has been generated', async function () {
       try {
         await metamaskController.verifySeedPhrase();
-      } catch (error) {
-        assert.equal(
-          error.message,
-          'MetamaskController - No HD Key Tree found',
-        );
+        assert.fail('should throw');
+      } catch (e) {
+        assert.equal(e.message, 'MetamaskController - No HD Key Tree found');
       }
     });
 
+    it('should return the mnemonic as Uint8Array, when a keyring has been properly generated', async function () {
+      const testSRP =
+        'midnight baby lonely era husband law side elder slim safe require mobile';
+      const encodedTestSRP = Array.from(Buffer.from(testSRP, 'utf8').values());
+      await metamaskController.createNewVaultAndRestore(
+        'password',
+        encodedTestSRP,
+      );
+      const uint8ArraySRP = await metamaskController.verifySeedPhrase();
+      const convertedBackToString = uint8ArrayMnemonicToString(uint8ArraySRP)
+      assert.equal(convertedBackToString, testSRP);
+    });
+  });
+
+  describe('#addNewAccount', function () {
     beforeEach(async function () {
       await metamaskController.createNewVaultAndKeychain('password');
     });
-
-    it('#addNewAccount', async function () {
-      await metamaskController.addNewAccount(1);
-      const getAccounts =
+    it('should add an account to the keyring controller', async function () {
+      const getAccountsFirst =
         await metamaskController.keyringController.getAccounts();
-      assert.equal(getAccounts.length, 2);
+      assert.equal(getAccountsFirst.length, 1);
+      await metamaskController.addNewAccount(1);
+      const getAccountsSecond =
+        await metamaskController.keyringController.getAccounts();
+      assert.equal(getAccountsSecond.length, 2);
     });
   });
 
