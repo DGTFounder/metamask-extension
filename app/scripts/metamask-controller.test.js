@@ -702,6 +702,17 @@ describe('MetaMaskController', function () {
         assert.equal(e.message, 'MetamaskController - No HD Key Tree found');
       }
     });
+
+    it('should add an account to the keyring controller', async function () {
+      await metamaskController.createNewVaultAndKeychain('password');
+      const getAccountsFirst =
+        await metamaskController.keyringController.getAccounts();
+      assert.equal(getAccountsFirst.length, 1);
+      await metamaskController.addNewAccount(1);
+      const getAccountsSecond =
+        await metamaskController.keyringController.getAccounts();
+      assert.equal(getAccountsSecond.length, 2);
+    });
   });
 
   describe('#verifyseedPhrase', function () {
@@ -723,23 +734,8 @@ describe('MetaMaskController', function () {
         encodedTestSRP,
       );
       const uint8ArraySRP = await metamaskController.verifySeedPhrase();
-      const convertedBackToString = uint8ArrayMnemonicToString(uint8ArraySRP)
+      const convertedBackToString = uint8ArrayMnemonicToString(uint8ArraySRP);
       assert.equal(convertedBackToString, testSRP);
-    });
-  });
-
-  describe('#addNewAccount', function () {
-    beforeEach(async function () {
-      await metamaskController.createNewVaultAndKeychain('password');
-    });
-    it('should add an account to the keyring controller', async function () {
-      const getAccountsFirst =
-        await metamaskController.keyringController.getAccounts();
-      assert.equal(getAccountsFirst.length, 1);
-      await metamaskController.addNewAccount(1);
-      const getAccountsSecond =
-        await metamaskController.keyringController.getAccounts();
-      assert.equal(getAccountsSecond.length, 2);
     });
   });
 

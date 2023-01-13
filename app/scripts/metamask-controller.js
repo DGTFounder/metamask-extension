@@ -2804,7 +2804,7 @@ export default class MetamaskController extends EventEmitter {
 
     try {
       await seedPhraseVerifier.verifyAccounts(accounts, serialized.mnemonic);
-      return serialized.mnemonic
+      return serialized.mnemonic;
     } catch (err) {
       log.error(err.message);
       throw err;
