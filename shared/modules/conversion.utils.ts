@@ -387,9 +387,9 @@ export function hexWEIToDecETH(hexWEI: string) {
 }
 
 export function decEthToConvertedCurrency(
-  ethTotal,
-  convertedCurrency,
-  conversionRate,
+  ethTotal: ConversionUtilParams['value'],
+  convertedCurrency?: string,
+  conversionRate?: number,
 ) {
   return conversionUtil(ethTotal, {
     fromNumericBase: 'dec',
@@ -442,7 +442,7 @@ export function getEthConversionFromWeiHex({
   'value' | 'fromCurrency' | 'conversionRate' | 'numberOfDecimals'
 >) {
   const denominations = [
-    fromCurrency,
+    EtherDenomination.ETH,
     EtherDenomination.GWEI,
     EtherDenomination.WEI,
   ];
