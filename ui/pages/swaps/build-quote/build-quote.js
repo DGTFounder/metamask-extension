@@ -72,7 +72,6 @@ import {
   getUseCurrencyRateCheck,
 } from '../../../selectors';
 
-import { getValueFromWeiHex } from '../../../helpers/utils/conversions.util';
 import { getURLHostName } from '../../../helpers/utils/util';
 import { usePrevious } from '../../../hooks/usePrevious';
 import { useTokenTracker } from '../../../hooks/useTokenTracker';
@@ -109,6 +108,7 @@ import { isEqualCaseInsensitive } from '../../../../shared/modules/string-utils'
 import { hexToDecimal } from '../../../../shared/lib/metamask-controller-utils';
 import { calcTokenAmount } from '../../../../shared/lib/transactions-controller-utils';
 import { shouldEnableDirectWrapping } from '../../../../shared/lib/swaps-utils';
+import { getValueFromWeiHex } from '../../../../shared/modules/conversion.utils';
 
 const fuseSearchKeys = [
   { name: 'name', weight: 0.499 },

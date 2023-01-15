@@ -259,7 +259,7 @@ export interface TxParams {
   /** The transaction count for the current account/network */
   nonce: number;
   /** The amount of gwei, in hexadecimal, per unit of gas */
-  gasPrice: string;
+  gasPrice?: string;
   /** The max amount of gwei, in hexadecimal, the user is willing to pay */
   gas: string;
   /** Hexadecimal encoded string representing calls to the EVM's ABI */
@@ -270,6 +270,8 @@ export interface TxParams {
    * for lower gas fees on specific opcodes. See the EIP for more details.
    */
   accessList?: AccessList;
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
 }
 
 export interface TxError {

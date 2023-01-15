@@ -60,26 +60,6 @@ export function addFiat(...args) {
   });
 }
 
-export function getValueFromWeiHex({
-  value,
-  fromCurrency = 'ETH',
-  toCurrency,
-  conversionRate,
-  numberOfDecimals,
-  toDenomination,
-}) {
-  return conversionUtil(value, {
-    fromNumericBase: 'hex',
-    toNumericBase: 'dec',
-    fromCurrency,
-    toCurrency,
-    numberOfDecimals,
-    fromDenomination: 'WEI',
-    toDenomination,
-    conversionRate,
-  });
-}
-
 export function getTransactionFee({
   value,
   fromCurrency = 'ETH',
@@ -88,7 +68,7 @@ export function getTransactionFee({
   numberOfDecimals,
 }) {
   return conversionUtil(value, {
-    fromNumericBase: 'BN',
+    fromNumericBase: 'hex',
     toNumericBase: 'dec',
     fromDenomination: 'WEI',
     fromCurrency,

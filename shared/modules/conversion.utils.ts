@@ -7,11 +7,11 @@
  *
  * @param {(number | string | BN)} value - The value to convert.
  * @param {object} [options] - Options to specify details of the conversion
- * @param {string} [options.fromCurrency = 'ETH' | 'USD'] - The currency of the passed value
- * @param {string} [options.toCurrency = 'ETH' | 'USD'] - The desired currency of the result
+ * @param {string} [options.fromCurrency = EtherDenomination.ETH | 'USD'] - The currency of the passed value
+ * @param {string} [options.toCurrency = EtherDenomination.ETH | 'USD'] - The desired currency of the result
  * @param {string} [options.fromNumericBase = 'hex' | 'dec' | 'BN'] - The numeric basic of the passed value.
  * @param {string} [options.toNumericBase = 'hex' | 'dec' | 'BN'] - The desired numeric basic of the result.
- * @param {string} [options.fromDenomination = 'WEI'] - The denomination of the passed value
+ * @param {string} [options.fromDenomination = EtherDenomination.WEI] - The denomination of the passed value
  * @param {string} [options.numberOfDecimals] - The desired number of decimals in the result
  * @param {string} [options.roundDown] - The desired number of decimals to round down to
  * @param {number} [options.conversionRate] - The rate to use to make the fromCurrency -> toCurrency conversion
@@ -22,12 +22,12 @@
  * on the accompanying options.
  */
 
-import { isHexString, isObject } from '@metamask/utils';
+import { isObject } from '@metamask/utils';
 import { BigNumber } from 'bignumber.js';
 
-import { BN } from 'ethereumjs-util';
-
-import { stripHexPrefix } from './hexstring-utils';
+import { addHexPrefix, BN } from 'ethereumjs-util';
+import { EtherDenomination } from '../constants/common';
+import { Numeric } from './Numeric';
 
 // Big Number Constants
 const BIG_NUMBER_WEI_MULTIPLIER = new BigNumber('1000000000000000000');
@@ -35,28 +35,10 @@ const BIG_NUMBER_GWEI_MULTIPLIER = new BigNumber('1000000000');
 const BIG_NUMBER_ETH_MULTIPLIER = new BigNumber('1');
 
 // Setter Maps
-const toBigNumber = {
-  hex: (n: string) => new BigNumber(stripHexPrefix(n), 16),
-  dec: (n: number | string) => new BigNumber(String(n), 10),
-  BN: (n: BN) => new BigNumber(n.toString(16), 16),
-};
 const toNormalizedDenomination = {
   WEI: (bigNumber: BigNumber) => bigNumber.div(BIG_NUMBER_WEI_MULTIPLIER),
   GWEI: (bigNumber: BigNumber) => bigNumber.div(BIG_NUMBER_GWEI_MULTIPLIER),
   ETH: (bigNumber: BigNumber) => bigNumber.div(BIG_NUMBER_ETH_MULTIPLIER),
-};
-const toSpecifiedDenomination = {
-  WEI: (bigNumber: BigNumber) =>
-    bigNumber.times(BIG_NUMBER_WEI_MULTIPLIER).round(),
-  GWEI: (bigNumber: BigNumber) =>
-    bigNumber.times(BIG_NUMBER_GWEI_MULTIPLIER).round(9),
-  ETH: (bigNumber: BigNumber) =>
-    bigNumber.times(BIG_NUMBER_ETH_MULTIPLIER).round(9),
-};
-const baseChange = {
-  hex: (n: BigNumber) => n.toString(16),
-  dec: (n: BigNumber) => new BigNumber(n).toString(10),
-  BN: (n: BigNumber) => new BN(n.toString(16)),
 };
 
 // Utility function for checking base types
@@ -67,23 +49,22 @@ const isValidBase = (base: number) => {
 /**
  * Defines the base type of numeric value
  */
-export type NumericBase = 'hex' | 'dec' | 'BN' | undefined;
+export type NumericBase = 'hex' | 'dec' | undefined;
 
 /**
  * Defines which type of denomination a value is in
  */
-export type EthDenomination = 'WEI' | 'GWEI' | 'ETH';
 
 interface ConversionUtilParams {
   value: string | number | BN | BigNumber;
   fromNumericBase: NumericBase;
-  fromDenomination?: EthDenomination;
+  fromDenomination?: EtherDenomination;
   fromCurrency?: string;
   toNumericBase?: NumericBase;
-  toDenomination?: EthDenomination;
+  toDenomination?: EtherDenomination;
   toCurrency?: string;
   numberOfDecimals?: number;
-  conversionRate?: number;
+  conversionRate?: number | BigNumber;
   invertConversionRate?: boolean;
   roundDown?: number;
 }
@@ -118,39 +99,19 @@ function converter({
   invertConversionRate,
   roundDown,
 }: ConversionUtilParams) {
-  // let convertedValue = fromNumericBase
-  //   ? toBigNumber[fromNumericBase](value)
-  //   : value;
-
-  let convertedValue: BigNumber;
-
-  if (fromNumericBase === 'hex' && isHexString(value)) {
-    convertedValue = toBigNumber.hex(value);
-  } else if (
-    fromNumericBase === 'dec' &&
-    (typeof value === 'number' || typeof value === 'string')
-  ) {
-    convertedValue = toBigNumber.dec(value);
-  } else if (fromNumericBase === 'BN' && value instanceof BN) {
-    convertedValue = toBigNumber.BN(value);
-  } else if (
-    typeof fromNumericBase === 'undefined' &&
-    value instanceof BigNumber
-  ) {
-    convertedValue = value;
-  } else if (typeof fromNumericBase === 'undefined') {
-    throw new Error(
-      'fromNumericBase is not specified and value is not an instanceOf BigNumber',
-    );
-  } else {
-    throw new Error(
-      `fromNumericBase was provided as ${fromNumericBase} and typeof value is ${typeof value}`,
-    );
+  let base;
+  if (fromNumericBase === 'hex') {
+    base = 16 as const;
+  } else if (fromNumericBase === 'dec') {
+    base = 10 as const;
   }
-
-  if (fromDenomination) {
-    convertedValue = toNormalizedDenomination[fromDenomination](convertedValue);
+  let toBase;
+  if (toNumericBase === 'hex') {
+    toBase = 16 as const;
+  } else if (toNumericBase === 'dec') {
+    toBase = 10 as const;
   }
+  let numeric = new Numeric(value, base, fromDenomination);
 
   if (fromCurrency !== toCurrency) {
     if (conversionRate === null || conversionRate === undefined) {
@@ -158,37 +119,36 @@ function converter({
         `Converting from ${fromCurrency} to ${toCurrency} requires a conversionRate, but one was not provided`,
       );
     }
-    let rate = toBigNumber.dec(conversionRate);
-    if (invertConversionRate) {
-      rate = new BigNumber(1.0).div(conversionRate);
-    }
-    convertedValue = convertedValue.times(rate);
+    numeric = numeric.applyConversionRate(conversionRate, invertConversionRate);
   }
 
-  if (toDenomination) {
-    convertedValue = toSpecifiedDenomination[toDenomination](convertedValue);
+  if (toDenomination || typeof fromDenomination !== 'undefined') {
+    numeric = numeric.toDenomination(toDenomination ?? EtherDenomination.ETH);
   }
 
   if (numberOfDecimals !== undefined && numberOfDecimals !== null) {
-    convertedValue = convertedValue.round(
-      numberOfDecimals,
-      BigNumber.ROUND_HALF_DOWN,
-    );
+    numeric = numeric.round(numberOfDecimals, BigNumber.ROUND_HALF_DOWN);
   }
 
   if (roundDown) {
-    convertedValue = convertedValue.round(roundDown, BigNumber.ROUND_DOWN);
+    numeric = numeric.round(roundDown, BigNumber.ROUND_DOWN);
   }
 
-  if (toNumericBase === 'hex') {
-    return baseChange.hex(convertedValue);
-  } else if (toNumericBase === 'dec') {
-    return baseChange.dec(convertedValue);
-  } else if (toNumericBase === 'BN') {
-    return baseChange.BN(convertedValue);
+  if (toBase) {
+    // console.log(
+    //   'toBase',
+    //   toBase,
+    //   'value',
+    //   numeric.toBase(toBase).toString(),
+    //   'toDenom',
+    //   toDenomination,
+    //   'fromDenom',
+    //   fromDenomination,
+    // );
+    return numeric.toBase(toBase).toString();
   }
 
-  return convertedValue;
+  return numeric.value;
 }
 
 const conversionUtil = (
@@ -372,7 +332,7 @@ const conversionMax = (
   return firstIsGreater ? firstProps.value : secondProps.value;
 };
 
-const conversionGTE = (
+export const conversionGTE = (
   { ...firstProps }: Omit<ConversionUtilParams, 'toNumericBase'>,
   { ...secondProps }: Omit<ConversionUtilParams, 'toNumericBase'>,
 ) => {
@@ -381,7 +341,7 @@ const conversionGTE = (
   return firstValue.greaterThanOrEqualTo(secondValue);
 };
 
-const conversionLTE = (
+export const conversionLTE = (
   { ...firstProps }: Omit<ConversionUtilParams, 'toNumericBase'>,
   { ...secondProps }: Omit<ConversionUtilParams, 'toNumericBase'>,
 ) => {
@@ -390,23 +350,159 @@ const conversionLTE = (
   return firstValue.lessThanOrEqualTo(secondValue);
 };
 
-const toNegative = (
-  n: BigNumberConversionInputTypes,
-  options: Omit<ConversionUtilParams, 'value'> & {
-    multiplicandBase: number;
-    multiplierBase: number;
-  },
-) => {
-  return multiplyCurrencies(n, -1, options);
-};
-
-function decGWEIToHexWEI(decGWEI: number) {
+export function decGWEIToHexWEI(decGWEI: number) {
   return conversionUtil(decGWEI, {
     fromNumericBase: 'dec',
     toNumericBase: 'hex',
-    fromDenomination: 'GWEI',
-    toDenomination: 'WEI',
+    fromDenomination: EtherDenomination.GWEI,
+    toDenomination: EtherDenomination.WEI,
   });
+}
+
+export function subtractHexes(aHexWEI: string, bHexWEI: string) {
+  return new Numeric(aHexWEI, 16)
+    .minus(new Numeric(bHexWEI, 16))
+    .round(6, BigNumber.ROUND_HALF_DOWN)
+    .toString();
+}
+
+export function addHexes(aHexWEI: string, bHexWEI: string) {
+  return new Numeric(aHexWEI, 16)
+    .add(new Numeric(bHexWEI, 16))
+    .round(6, BigNumber.ROUND_HALF_DOWN)
+    .toString();
+}
+
+export function decWEIToDecETH(decWEI: string) {
+  return new Numeric(decWEI, 10, EtherDenomination.WEI)
+    .toDenomination(EtherDenomination.ETH)
+    .toString();
+}
+
+export function hexWEIToDecETH(hexWEI: string) {
+  return new Numeric(hexWEI, 16, EtherDenomination.WEI)
+    .toDenomination(EtherDenomination.ETH)
+    .toBase(10)
+    .toString();
+}
+
+export function decEthToConvertedCurrency(
+  ethTotal,
+  convertedCurrency,
+  conversionRate,
+) {
+  return conversionUtil(ethTotal, {
+    fromNumericBase: 'dec',
+    toNumericBase: 'dec',
+    fromCurrency: EtherDenomination.ETH,
+    toCurrency: convertedCurrency,
+    numberOfDecimals: 2,
+    conversionRate,
+  });
+}
+
+export function getWeiHexFromDecimalValue({
+  value,
+  conversionRate = 1,
+  fromDenomination,
+  fromCurrency,
+  invertConversionRate = false,
+}: Pick<
+  ConversionUtilParams,
+  | 'value'
+  | 'fromCurrency'
+  | 'conversionRate'
+  | 'fromDenomination'
+  | 'invertConversionRate'
+>) {
+  let numeric = new Numeric(value, 10, fromDenomination);
+  if (fromCurrency !== EtherDenomination.ETH) {
+    numeric = numeric.applyConversionRate(conversionRate, invertConversionRate);
+  }
+  return numeric.toBase(16).toDenomination(EtherDenomination.WEI).toString();
+}
+
+/**
+ * Converts a BN object to a hex string with a '0x' prefix
+ *
+ * @param inputBn - The BN to convert to a hex string
+ * @returns A '0x' prefixed hex string
+ */
+export function bnToHex(inputBn: BN) {
+  return addHexPrefix(inputBn.toString(16));
+}
+
+export function getEthConversionFromWeiHex({
+  value,
+  fromCurrency = EtherDenomination.ETH,
+  conversionRate,
+  numberOfDecimals = 6,
+}: Pick<
+  ConversionUtilParams,
+  'value' | 'fromCurrency' | 'conversionRate' | 'numberOfDecimals'
+>) {
+  const denominations = [
+    fromCurrency,
+    EtherDenomination.GWEI,
+    EtherDenomination.WEI,
+  ];
+
+  let nonZeroDenomination;
+
+  for (let i = 0; i < denominations.length; i++) {
+    const convertedValue = getValueFromWeiHex({
+      value,
+      conversionRate,
+      fromCurrency,
+      toCurrency: fromCurrency,
+      numberOfDecimals,
+      toDenomination: denominations[i],
+    });
+
+    if (convertedValue !== '0' || i === denominations.length - 1) {
+      nonZeroDenomination = `${convertedValue} ${denominations[i]}`;
+      break;
+    }
+  }
+
+  return nonZeroDenomination;
+}
+
+export function getValueFromWeiHex({
+  value,
+  fromCurrency = EtherDenomination.ETH,
+  toCurrency,
+  conversionRate,
+  numberOfDecimals,
+  toDenomination = EtherDenomination.ETH,
+}: Pick<
+  ConversionUtilParams,
+  | 'value'
+  | 'fromCurrency'
+  | 'toCurrency'
+  | 'conversionRate'
+  | 'numberOfDecimals'
+  | 'toDenomination'
+>) {
+  let numeric = new Numeric(value, 16, EtherDenomination.WEI);
+  if (fromCurrency !== toCurrency) {
+    numeric = numeric.applyConversionRate(conversionRate);
+  }
+  return numeric
+    .toBase(10)
+    .toDenomination(toDenomination)
+    .round(numberOfDecimals, BigNumber.ROUND_HALF_DOWN)
+    .toString();
+}
+
+export function sumHexes(first: string, ...args: string[]) {
+  const firstValue = new Numeric(first, 16);
+  const total = args.reduce(
+    (acc, hexAmount) => acc.add(new Numeric(hexAmount, 16)),
+    firstValue,
+  );
+
+  return total.toPrefixedHexString();
 }
 
 export {
@@ -415,13 +511,8 @@ export {
   multiplyCurrencies,
   conversionGreaterThan,
   conversionLessThan,
-  conversionGTE,
-  conversionLTE,
   conversionMax,
-  toNegative,
   subtractCurrencies,
-  decGWEIToHexWEI,
-  toBigNumber,
   toNormalizedDenomination,
   divideCurrencies,
 };

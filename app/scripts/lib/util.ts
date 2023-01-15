@@ -1,6 +1,5 @@
 import BN from 'bn.js';
 import { memoize } from 'lodash';
-import { BigNumber } from 'bignumber.js';
 import { CHAIN_IDS, TEST_CHAINS } from '../../../shared/constants/network';
 
 import {
@@ -122,16 +121,6 @@ const addHexPrefix = (str: string) => {
   return `0x${str}`;
 };
 
-/**
- * Converts a BN object to a hex string with a '0x' prefix
- *
- * @param inputBn - The BN to convert to a hex string
- * @returns A '0x' prefixed hex string
- */
-function bnToHex(inputBn: BigNumber) {
-  return addHexPrefix(inputBn.toString(16));
-}
-
 function getChainType(chainId: string) {
   if (chainId === CHAIN_IDS.MAINNET) {
     return 'mainnet';
@@ -158,7 +147,6 @@ export {
   hexToBn,
   BnMultiplyByFraction,
   addHexPrefix,
-  bnToHex,
   getChainType,
   checkAlarmExists,
 };

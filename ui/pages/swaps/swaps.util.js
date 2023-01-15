@@ -19,7 +19,6 @@ import {
   isSwapsDefaultTokenSymbol,
 } from '../../../shared/modules/swaps.utils';
 import { CHAIN_IDS, CURRENCY_SYMBOLS } from '../../../shared/constants/network';
-import { getValueFromWeiHex } from '../../helpers/utils/conversions.util';
 import { formatCurrency } from '../../helpers/utils/confirm-tx.util';
 import fetchWithCache from '../../../shared/lib/fetch-with-cache';
 
@@ -35,7 +34,10 @@ import {
   truthyString,
   validateData,
 } from '../../../shared/lib/swaps-utils';
-import { sumHexes } from '../../helpers/utils/transactions.util';
+import {
+  getValueFromWeiHex,
+  sumHexes,
+} from '../../../shared/modules/conversion.utils';
 
 const CACHE_REFRESH_FIVE_MINUTES = 300000;
 const USD_CURRENCY_CODE = 'usd';

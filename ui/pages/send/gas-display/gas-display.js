@@ -37,13 +37,13 @@ import {
   getUseCurrencyRateCheck,
 } from '../../../selectors';
 
-import {
-  hexWEIToDecETH,
-  addHexes,
-} from '../../../helpers/utils/conversions.util';
 import { INSUFFICIENT_TOKENS_ERROR } from '../send.constants';
 import { getCurrentDraftTransaction } from '../../../ducks/send';
 import { showModal } from '../../../store/actions';
+import {
+  addHexes,
+  hexWEIToDecETH,
+} from '../../../../shared/modules/conversion.utils';
 
 export default function GasDisplay({ gasError }) {
   const t = useContext(I18nContext);

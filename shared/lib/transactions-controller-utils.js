@@ -161,12 +161,3 @@ export function decimalToHex(decimal) {
     toNumericBase: 'hex',
   });
 }
-
-export function hexWEIToDecETH(hexWEI) {
-  return conversionUtil(hexWEI, {
-    fromNumericBase: 'hex',
-    toNumericBase: 'dec',
-    fromDenomination: 'WEI',
-    toDenomination: 'ETH',
-  });
-}
