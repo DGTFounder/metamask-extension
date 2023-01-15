@@ -7,10 +7,29 @@ import { stripHexPrefix } from './hexstring-utils';
 
 type NumericValue = string | number | BN | BigNumber;
 
+/**
+ * All variations of isHexString from our own utilities and etherumjs-utils
+ * return false for a '-' prefixed hex string. This utility method strips the
+ * possible '-' from the string before testing its validity so that negative
+ * hex values can be properly handled.
+ *
+ * @param value - The string to check
+ * @returns true if the value is a hex string (negative or otherwise)
+ */
 function isHexStringOrNegatedHexString(value: string): value is string {
   return isHexString(value.replace('-', '')) || isHexString(value);
 }
 
+/**
+ * BigNumber supports hex strings with '.' (aka decimals) in the string.
+ * No version of isHexString returs true if the string contains a decimal so
+ * this method is used to check if both parts of the string split by the
+ * decimal are hex strings. If so we can feed this value into BigNumber to get
+ * a valid Numeric.
+ *
+ * @param value - The string to check
+ * @returns true if the string is a hexadecimal split by '.'
+ */
 function isDecimalHex(value: string): boolean {
   const parts = value.split('.');
   if (parts.length === 1) {
@@ -19,6 +38,12 @@ function isDecimalHex(value: string): boolean {
   return parts.every((part) => isHexStringOrNegatedHexString(part));
 }
 
+/**
+ * Converts a hexadecimal in string or number format to a BigNumber.
+ *
+ * @param value - hexadecimal value in string or number format.
+ * @returns A BigNumber representation of the value
+ */
 function hexadecimalToBigNumber(value: string | number): BigNumber {
   const stringified = typeof value === 'number' ? `${value}` : value;
   const isNegative = stringified[0] === '-';
@@ -31,6 +56,12 @@ function hexadecimalToBigNumber(value: string | number): BigNumber {
   return isNegative ? valueAsBigNumber.negated() : valueAsBigNumber;
 }
 
+/**
+ * Converts a decimal in string or number format to a BigNumber.
+ *
+ * @param value - decimal value in string or number format.
+ * @returns A BigNumber representation of the value
+ */
 function decimalToBigNumber(value: string | number) {
   return new BigNumber(String(value), 10);
 }
@@ -40,15 +71,11 @@ function decimalToBigNumber(value: string | number) {
  * The only valid strings for this method are those that are either hexadecimal
  * numeric values OR numeric strings that can be converted to BigNumbers. It is
  * impossible to tell the difference between a hex value of 100000 vs a decimal
- * value of 100000 so a second parameter indicating whether the value is a hex
- * or decimal is provided ('hex' | 'dec'). A third option is a carryover from
- * our current system whereby some values that were hexadecimal strings were
- * being called with 'BN' as the provided numericBase. This is an error that
- * will be corrected overtime.
- * TODO: Deprecate 'BN' as a valid option for this method
+ * value of 100000 so a second parameter indicating the numeric base of the
+ * string value must be provided.
  *
  * @param value - A hexadecimal or decimal string
- * @param numericBase - Either 'hex' for a hexadeciaml or 'dec' for a decimal
+ * @param numericBase - Either 16 for a hexadeciaml or 10 for a decimal
  * @returns A BigNumber representation of the value
  */
 function stringToBigNumber(value: string, numericBase: 10 | 16) {
@@ -71,11 +98,13 @@ function stringToBigNumber(value: string, numericBase: 10 | 16) {
 }
 
 /**
- * This method is
+ * This method will convert a hexadecimal or deciaml number into a BigNumber.
+ * The second parameter must be supplied and determines whether to treat the
+ * value as a hexadecimal or decimal value.
  *
- * @param value
- * @param numericBase
- * @returns
+ * @param value - hexadecimal or decimal number[]
+ * @param numericBase - 10 for decimal, 16 for hexadecimal
+ * @returns BigNumber representation of the value
  */
 function numberToBigNumber(value: number, numericBase: 10 | 16) {
   if (typeof value !== 'number') {
@@ -89,6 +118,12 @@ function numberToBigNumber(value: number, numericBase: 10 | 16) {
   return new BigNumber(value, 10);
 }
 
+/**
+ * Method to convert a BN to a BigNumber
+ *
+ * @param value - A BN representation of a value
+ * @returns A BigNumber representation of the BN's underlying value
+ */
 function bnToBigNumber(value: BN) {
   if (value instanceof BN === false) {
     throw new Error(
@@ -98,13 +133,19 @@ function bnToBigNumber(value: BN) {
   return new BigNumber(value.toString(16), 16);
 }
 
+/**
+ * Converts a value of the supported types (string, number, BN) to a BigNumber.
+ *
+ * @param value - The value to convert to a BigNumber
+ * @param numericBase - The numeric base of the underlying value
+ * @returns A BigNumber representation of the value
+ */
 function valueToBigNumber(value: string | number | BN, numericBase: 10 | 16) {
   if (typeof value === 'string') {
     return stringToBigNumber(value, numericBase);
   } else if (typeof value === 'number') {
     return numberToBigNumber(value, numericBase);
   }
-  console.log(typeof value, value);
   return bnToBigNumber(value);
 }
 
@@ -147,10 +188,20 @@ const toSpecifiedDenomination = {
  * composable so that we shouldn't need tons of helper methods for shortcuts.
  */
 export class Numeric {
+  /**
+   * The underlying value of the Numeric, always in BigNumber form
+   */
   value: BigNumber;
 
+  /**
+   * The numeric base for this Numeric, either 10 for decimal or 16 for Hex
+   */
   base?: 10 | 16;
 
+  /**
+   * The current denomination, if any. The only supported denominations are
+   * ETH, GWEI, WEI.
+   */
   denomination?: EtherDenomination;
 
   constructor(
@@ -163,6 +214,10 @@ export class Numeric {
     if (value instanceof BigNumber) {
       this.value = value;
     } else if (typeof value === 'undefined') {
+      // There are parts of the codebase that call this method without a value.
+      // Over time of converting to TypeScript we will eradicate those, but the
+      // helper methods that those instances employ would default the value to
+      // 0. This block keeps that intact.
       this.value = new BigNumber('0', 10);
       this.base = 10;
     } else if (base) {
@@ -174,6 +229,16 @@ export class Numeric {
     }
   }
 
+  /**
+   * I was unsure if MetaMask prefers the `new Numeric` or `Numeric.from` syntax.
+   * Will keep this in for now and remove during review if we prefer the new
+   * keyword.
+   *
+   * @param value - The value of the Numeric
+   * @param base - Either undefined, 10 for decimal or 16 for hexadecimal
+   * @param denomination - The Ether denomination to set, if any
+   * @deprecated
+   */
   static from(
     value: NumericValue,
     base?: 10 | 16,
@@ -182,15 +247,20 @@ export class Numeric {
     return new Numeric(value, base, denomination);
   }
 
+  /**
+   * Returns a new Numeric with the base value changed to the provided base,
+   * or the original Numeric if the base provided is the same as the current
+   * base. No computation or conversion happens here but rather the result of
+   * toString will be changed depending on the value of this.base when that
+   * method is invoked.
+   *
+   * @param base - The numeric base to change the Numeric to, either 10 or 16
+   * @returns A new Numeric with the base updated
+   */
   toBase(base: 10 | 16) {
     if (this.base !== base) {
       return new Numeric(this.value, base, this.denomination);
     }
-    return this;
-  }
-
-  setDenomination(denomination: EtherDenomination) {
-    this.denomination = denomination;
     return this;
   }
 
@@ -205,11 +275,6 @@ export class Numeric {
   }
 
   toDenomination(denomination: EtherDenomination) {
-    if (typeof this.denomination === undefined) {
-      throw new Error(
-        'You may not convert a Numeric to a denomination if it was constructed without a denomination supplied. To fix this, first call the `setDenomination` method or supply a denomination in the constructor',
-      );
-    }
     if (this.denomination !== denomination) {
       const result = new Numeric(
         toSpecifiedDenomination[denomination](this.getValueInETH()),
@@ -251,6 +316,15 @@ export class Numeric {
     );
   }
 
+  /**
+   * Applies a conversion rate to the Numeric, defaulting to 1 to handle
+   * possibly undefined rates.
+   *
+   * @param rate - The multiplier to apply, defaults to 1 to handle possibly
+   * undefined values.
+   * @param invert - if true, inverts the rate
+   * @returns New Numeric value with conversion rate applied.
+   */
   applyConversionRate(rate?: number | BigNumber, invert?: boolean) {
     let conversionRate = new Numeric(rate ?? 1, 10);
     if (invert) {
@@ -259,6 +333,13 @@ export class Numeric {
     return this.times(conversionRate);
   }
 
+  /**
+   * Divides the Numeric by another supplied Numeric, carrying over the base
+   * and denomination from the current Numeric.
+   *
+   * @param divisor - The Numeric to divide this Numeric by
+   * @returns A new Numeric that contains the result of the division
+   */
   divide(divisor: Numeric) {
     return new Numeric(
       this.value.div(divisor.value),
@@ -267,18 +348,41 @@ export class Numeric {
     );
   }
 
+  /**
+   * Get a base 16 hexadecimal string representation of the Numeric that is
+   * 0x prefixed. This operation bypasses the currently set base of the
+   * Numeric.
+   *
+   * @returns 0x prefixed hexstring.
+   */
   toPrefixedHexString() {
     return addHexPrefix(this.value.toString(16));
   }
 
+  /**
+   * Gets the string representation of the Numeric, using the current value of
+   * this.base to determine if it should be a decimal or hexadecimal string.
+   *
+   * @returns the string representation of the Numeric
+   */
   toString() {
     return this.value.toString(this.base);
   }
 
+  /**
+   * Returns a fixed-point decimal string representation of the Numeric
+   *
+   * @param decimals - the amount of decimal precision to use when rounding
+   * @returns A fixed point decimal string represenation of the Numeric
+   */
   toFixed(decimals: number) {
     return this.value.toFixed(decimals);
   }
 
+  /**
+   *
+   * @returns
+   */
   toNumber() {
     return this.value.toNumber();
   }
