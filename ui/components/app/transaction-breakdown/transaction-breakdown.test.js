@@ -27,7 +27,7 @@ describe('TransactionBreakdown', () => {
     },
   });
 
-  describe.skip('with a typical non-EIP-1559 transaction', () => {
+  describe('with a typical non-EIP-1559 transaction', () => {
     it('renders properly', () => {
       const { getAllByTestId } = renderWithProvider(
         <TransactionBreakdown

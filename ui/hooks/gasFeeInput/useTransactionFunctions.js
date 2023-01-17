@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
-import { decimalToHex } from '../../../shared/lib/transactions-controller-utils';
 
 import { EDIT_GAS_MODES, PRIORITY_LEVELS } from '../../../shared/constants/gas';
 import {
@@ -15,7 +14,10 @@ import {
   updateSwapsUserFeeLevel,
   updateTransactionGasFees,
 } from '../../store/actions';
-import { decGWEIToHexWEI } from '../../../shared/modules/conversion.utils';
+import {
+  decGWEIToHexWEI,
+  decimalToHex,
+} from '../../../shared/modules/conversion.utils';
 
 /**
  * @typedef {object} TransactionFunctionsReturnType

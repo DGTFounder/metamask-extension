@@ -140,13 +140,16 @@ function bnToBigNumber(value: BN) {
  * @param numericBase - The numeric base of the underlying value
  * @returns A BigNumber representation of the value
  */
-function valueToBigNumber(value: string | number | BN, numericBase: 10 | 16) {
+function valueToBigNumber(value: string | number, numericBase: 10 | 16) {
   if (typeof value === 'string') {
     return stringToBigNumber(value, numericBase);
-  } else if (typeof value === 'number') {
+  } else if (typeof value === 'number' && isNaN(value) === false) {
     return numberToBigNumber(value, numericBase);
   }
-  return bnToBigNumber(value);
+
+  throw new Error(
+    `Value: ${value} is not a string, number, BigNumber or BN. Type is: ${typeof value}.`,
+  );
 }
 
 // Big Number Constants
@@ -213,8 +216,14 @@ export class Numeric {
     this.denomination = denomination;
     if (value instanceof BigNumber) {
       this.value = value;
-    } else if (typeof value === 'undefined') {
-      // There are parts of the codebase that call this method without a value.
+    } else if (value instanceof BN) {
+      this.value = bnToBigNumber(value);
+    } else if (
+      typeof value === 'undefined' ||
+      (typeof value === 'number' && isNaN(value))
+    ) {
+      // There are parts of the codebase that call this method without a value,
+      // or with a 'NaN' (which is probably a bug somewhere in our tests?).
       // Over time of converting to TypeScript we will eradicate those, but the
       // helper methods that those instances employ would default the value to
       // 0. This block keeps that intact.
@@ -247,6 +256,8 @@ export class Numeric {
     return new Numeric(value, base, denomination);
   }
 
+  /** Conversions */
+
   /**
    * Returns a new Numeric with the base value changed to the provided base,
    * or the original Numeric if the base provided is the same as the current
@@ -274,8 +285,13 @@ export class Numeric {
     return toNormalizedDenomination[this.denomination](this.value);
   }
 
-  toDenomination(denomination: EtherDenomination) {
-    if (this.denomination !== denomination) {
+  tap(fn: (v: Numeric) => void) {
+    fn(this);
+    return this;
+  }
+
+  toDenomination(denomination?: EtherDenomination) {
+    if (denomination && this.denomination !== denomination) {
       const result = new Numeric(
         toSpecifiedDenomination[denomination](this.getValueInETH()),
         this.base,
@@ -286,34 +302,9 @@ export class Numeric {
     return this;
   }
 
-  round(
-    numberOfDecimals?: number,
-    roundingMode: number = BigNumber.ROUND_HALF_DOWN,
-  ) {
-    if (numberOfDecimals) {
-      return new Numeric(
-        this.value.round(numberOfDecimals, roundingMode),
-        this.base,
-        this.denomination,
-      );
-    }
-    return this;
-  }
-
-  add(numeric: Numeric) {
-    return new Numeric(this.value.add(numeric.value), this.base);
-  }
-
-  minus(numeric: Numeric) {
-    return new Numeric(this.value.minus(numeric.value), this.base);
-  }
-
-  times(multiplier: Numeric) {
-    return new Numeric(
-      this.value.times(multiplier.value),
-      this.base,
-      this.denomination,
-    );
+  shiftedBy(decimals: number) {
+    const powerOf = new Numeric(Math.pow(10, decimals), 10);
+    return this.divide(powerOf);
   }
 
   /**
@@ -333,6 +324,50 @@ export class Numeric {
     return this.times(conversionRate);
   }
 
+  round(
+    numberOfDecimals?: number,
+    roundingMode: number = BigNumber.ROUND_HALF_DOWN,
+  ) {
+    if (numberOfDecimals) {
+      return new Numeric(
+        this.value.round(numberOfDecimals, roundingMode),
+        this.base,
+        this.denomination,
+      );
+    }
+    return this;
+  }
+
+  /**
+   * TODO: make it possible to add ETH + GWEI value. So if you have
+   * Numeric 1 with denomination ETH and Numeric 2 with Denomination WEI,
+   * first convert Numeric 2 to ETH then add the amount to Numeric 1.
+   *
+   * @param numeric
+   */
+  add(numeric: Numeric) {
+    return new Numeric(this.value.add(numeric.value), this.base);
+  }
+
+  /**
+   * TODO: make it possible to subtract ETH - GWEI value. So if you have
+   * Numeric 1 with denomination ETH and Numeric 2 with Denomination WEI,
+   * first convert Numeric 2 to ETH then subtract the amount from Numeric 1.
+   *
+   * @param numeric
+   */
+  minus(numeric: Numeric) {
+    return new Numeric(this.value.minus(numeric.value), this.base);
+  }
+
+  times(multiplier: Numeric) {
+    return new Numeric(
+      this.value.times(multiplier.value),
+      this.base,
+      this.denomination,
+    );
+  }
+
   /**
    * Divides the Numeric by another supplied Numeric, carrying over the base
    * and denomination from the current Numeric.
@@ -346,6 +381,16 @@ export class Numeric {
       this.base,
       this.denomination,
     );
+  }
+
+  /** Terminating functions */
+
+  greaterThanOrEqualTo(comparator: Numeric) {
+    return this.value.greaterThanOrEqualTo(comparator.value);
+  }
+
+  lessThan(comparator: Numeric) {
+    return this.value.lessThan(comparator.value);
   }
 
   /**

@@ -151,37 +151,6 @@ function converter({
   return numeric.value;
 }
 
-const conversionUtil = (
-  value: string | number | BN | BigNumber,
-  {
-    fromCurrency = undefined,
-    toCurrency = fromCurrency,
-    fromNumericBase,
-    toNumericBase,
-    fromDenomination,
-    toDenomination,
-    numberOfDecimals,
-    conversionRate,
-    invertConversionRate,
-  }: Omit<ConversionUtilParams, 'value'>,
-) => {
-  if (fromCurrency !== toCurrency && !conversionRate) {
-    return 0;
-  }
-  return converter({
-    fromCurrency,
-    toCurrency,
-    fromNumericBase,
-    toNumericBase,
-    fromDenomination,
-    toDenomination,
-    numberOfDecimals,
-    conversionRate,
-    invertConversionRate,
-    value: value || '0',
-  });
-};
-
 type BigNumberConversionInputTypes = number | BigNumber | string;
 
 const getBigNumber = (value: BigNumberConversionInputTypes, base: number) => {
@@ -351,12 +320,10 @@ export const conversionLTE = (
 };
 
 export function decGWEIToHexWEI(decGWEI: number) {
-  return conversionUtil(decGWEI, {
-    fromNumericBase: 'dec',
-    toNumericBase: 'hex',
-    fromDenomination: EtherDenomination.GWEI,
-    toDenomination: EtherDenomination.WEI,
-  });
+  return new Numeric(decGWEI, 10, EtherDenomination.GWEI)
+    .toBase(16)
+    .toDenomination(EtherDenomination.WEI)
+    .toString();
 }
 
 export function subtractHexes(aHexWEI: string, bHexWEI: string) {
@@ -391,14 +358,13 @@ export function decEthToConvertedCurrency(
   convertedCurrency?: string,
   conversionRate?: number,
 ) {
-  return conversionUtil(ethTotal, {
-    fromNumericBase: 'dec',
-    toNumericBase: 'dec',
-    fromCurrency: EtherDenomination.ETH,
-    toCurrency: convertedCurrency,
-    numberOfDecimals: 2,
-    conversionRate,
-  });
+  let numeric = new Numeric(ethTotal, 10, EtherDenomination.ETH);
+
+  if (convertedCurrency !== EtherDenomination.ETH) {
+    numeric = numeric.applyConversionRate(conversionRate);
+  }
+
+  return numeric.round(2);
 }
 
 export function getWeiHexFromDecimalValue({
@@ -505,8 +471,22 @@ export function sumHexes(first: string, ...args: string[]) {
   return total.toPrefixedHexString();
 }
 
+export function hexWEIToDecGWEI(value: number | string | BigNumber | BN) {
+  return new Numeric(value, 16, EtherDenomination.WEI)
+    .toBase(10)
+    .toDenomination(EtherDenomination.GWEI)
+    .toString();
+}
+
+export function decimalToHex(decimal: number | string | BigNumber | BN) {
+  return new Numeric(decimal, 10).toBase(16).toString();
+}
+
+export function hexToDecimal(hexValue: number | string | BigNumber | BN) {
+  return new Numeric(hexValue, 16).toBase(10).toString();
+}
+
 export {
-  conversionUtil,
   addCurrencies,
   multiplyCurrencies,
   conversionGreaterThan,

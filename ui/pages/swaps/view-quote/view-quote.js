@@ -104,8 +104,6 @@ import { getTokenValueParam } from '../../../../shared/lib/metamask-controller-u
 import {
   calcGasTotal,
   calcTokenAmount,
-  decimalToHex,
-  hexWEIToDecGWEI,
   toPrecisionWithoutTrailingZeros,
 } from '../../../../shared/lib/transactions-controller-utils';
 import { addHexPrefix } from '../../../../app/scripts/lib/util';
@@ -114,7 +112,9 @@ import fetchEstimatedL1Fee from '../../../helpers/utils/optimism/fetchEstimatedL
 import {
   addHexes,
   decGWEIToHexWEI,
+  decimalToHex,
   decWEIToDecETH,
+  hexWEIToDecGWEI,
   sumHexes,
 } from '../../../../shared/modules/conversion.utils';
 import ViewQuotePriceDifference from './view-quote-price-difference';

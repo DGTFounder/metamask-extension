@@ -56,8 +56,6 @@ import {
 
 import { MIN_GAS_LIMIT_DEC } from '../send/send.constants';
 
-import { hexToDecimal } from '../../../shared/lib/metamask-controller-utils';
-import { hexWEIToDecGWEI } from '../../../shared/lib/transactions-controller-utils';
 ///: BEGIN:ONLY_INCLUDE_IN(flask)
 import { SnapInsight } from '../../components/app/confirm-page-container/flask/snap-insight';
 import { DropdownTab, Tab } from '../../components/ui/tabs';
@@ -69,7 +67,11 @@ import {
   CHAIN_ID_TO_NETWORK_ID_MAP,
   ///: END:ONLY_INCLUDE_IN
 } from '../../../shared/constants/network';
-import { addHexes } from '../../../shared/modules/conversion.utils';
+import {
+  addHexes,
+  hexToDecimal,
+  hexWEIToDecGWEI,
+} from '../../../shared/modules/conversion.utils';
 import TransactionAlerts from './transaction-alerts';
 
 const renderHeartBeatIfNotInTest = () =>

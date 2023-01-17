@@ -55,7 +55,9 @@ import {
   addHexes,
   conversionLessThan,
   decGWEIToHexWEI,
+  decimalToHex,
   getValueFromWeiHex,
+  hexWEIToDecGWEI,
 } from '../../../shared/modules/conversion.utils';
 import {
   getSelectedAccount,
@@ -88,8 +90,6 @@ import { ORIGIN_METAMASK } from '../../../shared/constants/app';
 import {
   calcGasTotal,
   calcTokenAmount,
-  decimalToHex,
-  hexWEIToDecGWEI,
 } from '../../../shared/lib/transactions-controller-utils';
 
 export const GAS_PRICES_LOADING_STATES = {

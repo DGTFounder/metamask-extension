@@ -5,7 +5,7 @@ import { debounce } from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 import {
   conversionGreaterThan,
-  conversionUtil,
+  decimalToHex,
   getValueFromWeiHex,
   multiplyCurrencies,
   subtractCurrencies,
@@ -109,6 +109,7 @@ import {
   calcGasTotal,
   calcTokenAmount,
 } from '../../../shared/lib/transactions-controller-utils';
+import { Numeric } from '../../../shared/modules/Numeric';
 import {
   estimateGasLimitForSend,
   generateTransactionParams,
@@ -1730,13 +1731,7 @@ export function editExistingTransaction(assetType, transactionId) {
       const address = getTokenAddressParam(tokenData);
       const nickname = getAddressBookEntryOrAccountName(state, address) ?? '';
 
-      const tokenAmountInHex = addHexPrefix(
-        conversionUtil(tokenAmountInDec, {
-          fromNumericBase: 'dec',
-          toNumericBase: 'hex',
-        }),
-      );
-
+      const tokenAmountInHex = addHexPrefix(decimalToHex(tokenAmountInDec));
       await dispatch(
         actions.addNewDraft({
           ...draftTransactionInitialState,
@@ -1936,14 +1931,13 @@ export function updateSendAmount(amount) {
         10,
         Number(draftTransaction.asset.details?.decimals || 0),
       );
-      const decimalValueString = conversionUtil(addHexPrefix(amount), {
-        fromNumericBase: 'hex',
-        toNumericBase: 'dec',
-        toCurrency: draftTransaction.asset.details?.symbol,
-        conversionRate: multiplier,
-        invertConversionRate: true,
-      });
-
+      const decimalValueString = new Numeric(addHexPrefix(amount), 16)
+        .toBase(10)
+        .applyConversionRate(
+          draftTransaction.asset.details?.symbol ? multiplier : 1,
+          true,
+        )
+        .toString();
       logAmount = `${Number(decimalValueString) ? decimalValueString : ''} ${
         draftTransaction.asset.details?.symbol
       }`;

@@ -5,7 +5,6 @@ import classNames from 'classnames';
 import { I18nContext } from '../../../contexts/i18n';
 import { useGasFeeContext } from '../../../contexts/gasFee';
 import { PRIMARY, SECONDARY } from '../../../helpers/constants/common';
-import { hexWEIToDecGWEI } from '../../../../shared/lib/transactions-controller-utils';
 import UserPreferencedCurrencyDisplay from '../../../components/app/user-preferenced-currency-display';
 import GasTiming from '../../../components/app/gas-timing';
 import InfoTooltip from '../../../components/ui/info-tooltip';
@@ -43,6 +42,7 @@ import { showModal } from '../../../store/actions';
 import {
   addHexes,
   hexWEIToDecETH,
+  hexWEIToDecGWEI,
 } from '../../../../shared/modules/conversion.utils';
 
 export default function GasDisplay({ gasError }) {

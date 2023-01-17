@@ -5,7 +5,6 @@ import { ObservableStore } from '@metamask/obs-store';
 import { mapValues, cloneDeep } from 'lodash';
 import abi from 'human-standard-token-abi';
 import {
-  conversionUtil,
   decGWEIToHexWEI,
   addCurrencies,
   sumHexes,
@@ -40,6 +39,8 @@ import {
 } from '../../../shared/lib/transactions-controller-utils';
 import fetchEstimatedL1Fee from '../../../ui/helpers/utils/optimism/fetchEstimatedL1Fee';
 
+import { Numeric } from '../../../shared/modules/Numeric';
+import { EtherDenomination } from '../../../shared/constants/common';
 import { NETWORK_EVENTS } from './network';
 
 // The MAX_GAS_LIMIT is a number that is higher than the maximum gas costs we have observed on any aggregator
@@ -747,34 +748,27 @@ export default class SwapsController {
       // It always includes any external fees charged by the quote source. In
       // addition, if the source asset is the selected chain's default token, trade.value
       // includes the amount of that token.
-      const totalWeiCost = new BigNumber(gasTotalInWeiHex, 16).plus(
-        trade.value,
+      const totalWeiCost = new Numeric(
+        gasTotalInWeiHex,
         16,
-      );
+        EtherDenomination.WEI,
+      ).add(new Numeric(trade.value, 16, EtherDenomination.WEI));
 
-      const totalEthCost = conversionUtil(totalWeiCost, {
-        fromCurrency: 'ETH',
-        fromDenomination: 'WEI',
-        toDenomination: 'ETH',
-        fromNumericBase: 'hex',
-        numberOfDecimals: 6,
-      });
+      const totalEthCost = totalWeiCost
+        .toDenomination(EtherDenomination.ETH)
+        .round(6)
+        .toString();
 
       // The total fee is aggregator/exchange fees plus gas fees.
       // If the swap is from the selected chain's default token, subtract
       // the sourceAmount from the total cost. Otherwise, the total fee
       // is simply trade.value plus gas fees.
       const ethFee = isSwapsDefaultTokenAddress(sourceToken, chainId)
-        ? conversionUtil(
-            totalWeiCost.minus(sourceAmount, 10), // sourceAmount is in wei
-            {
-              fromCurrency: 'ETH',
-              fromDenomination: 'WEI',
-              toDenomination: 'ETH',
-              fromNumericBase: 'hex',
-              numberOfDecimals: 6,
-            },
-          )
+        ? totalWeiCost
+            .minus(new Numeric(sourceAmount, 10))
+            .toDenomination(EtherDenomination.ETH)
+            .round(6)
+            .toString()
         : totalEthCost;
 
       const decimalAdjustedDestinationAmount = calcTokenAmount(

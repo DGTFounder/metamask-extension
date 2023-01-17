@@ -17,6 +17,7 @@ import { stripHexPrefix } from '../../../shared/modules/hexstring-utils';
 import {
   TransactionEnvelopeType,
   TransactionMeta,
+  TxParams,
 } from '../../../shared/constants/transaction';
 
 /**

@@ -2,10 +2,10 @@ import { connect } from 'react-redux';
 import { getNetworkSupportsSettingGasFees } from '../../../selectors/selectors';
 import { MIN_GAS_LIMIT_DEC } from '../../../pages/send/send.constants';
 import {
+  decGWEIToHexWEI,
   decimalToHex,
   hexWEIToDecGWEI,
-} from '../../../../shared/lib/transactions-controller-utils';
-import { decGWEIToHexWEI } from '../../../../shared/modules/conversion.utils';
+} from '../../../../shared/modules/conversion.utils';
 import AdvancedGasInputs from './advanced-gas-inputs.component';
 
 function convertGasPriceForInputs(gasPriceInHexWEI) {

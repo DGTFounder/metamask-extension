@@ -26,7 +26,6 @@ import { isValidHexAddress } from '../../../shared/modules/hexstring-utils';
 import {
   calcGasTotal,
   calcTokenAmount,
-  decimalToHex,
   toPrecisionWithoutTrailingZeros,
 } from '../../../shared/lib/transactions-controller-utils';
 import {
@@ -35,6 +34,7 @@ import {
   validateData,
 } from '../../../shared/lib/swaps-utils';
 import {
+  decimalToHex,
   getValueFromWeiHex,
   sumHexes,
 } from '../../../shared/modules/conversion.utils';

@@ -15,8 +15,10 @@ import { isLegacyTransaction } from '../../helpers/utils/transactions.util';
 
 import { useCurrencyDisplay } from '../useCurrencyDisplay';
 import { useUserPreferencedCurrency } from '../useUserPreferencedCurrency';
-import { decimalToHex } from '../../../shared/lib/transactions-controller-utils';
-import { decGWEIToHexWEI } from '../../../shared/modules/conversion.utils';
+import {
+  decGWEIToHexWEI,
+  decimalToHex,
+} from '../../../shared/modules/conversion.utils';
 
 /**
  * @typedef {object} GasEstimatesReturnType
