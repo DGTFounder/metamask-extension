@@ -274,6 +274,12 @@ export interface TxParams {
   maxPriorityFeePerGas?: string;
 }
 
+export interface TxReceipt {
+  blockHash?: string;
+  blockNumber?: string;
+  transactionIndex?: string;
+}
+
 export interface TxError {
   /** The message from the encountered error. */
   message: string;
@@ -328,6 +334,7 @@ export interface TransactionMeta {
   loadingDefaults: boolean;
   /** The transaction params as passed to the network provider. */
   txParams: TxParams;
+  txReceipt: TxReceipt;
   /** A history of mutations to this TransactionMeta object. */
   history: Record<string, any>[];
   /** A string representing the interface that suggested the transaction. */

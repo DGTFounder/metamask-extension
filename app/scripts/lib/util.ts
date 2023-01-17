@@ -1,5 +1,6 @@
 import BN from 'bn.js';
 import { memoize } from 'lodash';
+import { AccessList } from '@ethereumjs/tx';
 import { CHAIN_IDS, TEST_CHAINS } from '../../../shared/constants/network';
 
 import {
@@ -17,7 +18,6 @@ import { stripHexPrefix } from '../../../shared/modules/hexstring-utils';
 import {
   TransactionEnvelopeType,
   TransactionMeta,
-  TxParams,
 } from '../../../shared/constants/transaction';
 
 /**
@@ -241,7 +241,30 @@ export function addUrlProtocolPrefix(urlString: string) {
   return urlString;
 }
 
-export function formatTxMetaForRpcResult(txMeta: TransactionMeta) {
+interface FormattedTransactionMeta {
+  blockHash: string | null;
+  blockNumber: string | null;
+  from: string;
+  to: string;
+  hash: string;
+  nonce: string;
+  input: string;
+  v?: string;
+  r?: string;
+  s?: string;
+  value: string;
+  gas: string;
+  gasPrice?: string;
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
+  type: TransactionEnvelopeType;
+  accessList: AccessList | null;
+  transactionIndex: string | null;
+}
+
+export function formatTxMetaForRpcResult(
+  txMeta: TransactionMeta,
+): FormattedTransactionMeta {
   const { r, s, v, hash, txReceipt, txParams } = txMeta;
   const {
     to,
@@ -256,7 +279,7 @@ export function formatTxMetaForRpcResult(txMeta: TransactionMeta) {
     maxPriorityFeePerGas,
   } = txParams;
 
-  const formattedTxMeta = {
+  const formattedTxMeta: FormattedTransactionMeta = {
     v,
     r,
     s,
@@ -264,23 +287,25 @@ export function formatTxMetaForRpcResult(txMeta: TransactionMeta) {
     gas,
     from,
     hash,
-    nonce,
+    nonce: `${nonce}`,
     input: data || '0x',
     value: value || '0x0',
     accessList: accessList || null,
     blockHash: txReceipt?.blockHash || null,
     blockNumber: txReceipt?.blockNumber || null,
     transactionIndex: txReceipt?.transactionIndex || null,
+    type:
+      maxFeePerGas && maxPriorityFeePerGas
+        ? TransactionEnvelopeType.feeMarket
+        : TransactionEnvelopeType.legacy,
   };
 
   if (maxFeePerGas && maxPriorityFeePerGas) {
     formattedTxMeta.gasPrice = maxFeePerGas;
     formattedTxMeta.maxFeePerGas = maxFeePerGas;
     formattedTxMeta.maxPriorityFeePerGas = maxPriorityFeePerGas;
-    formattedTxMeta.type = TransactionEnvelopeType.feeMarket;
   } else {
     formattedTxMeta.gasPrice = gasPrice;
-    formattedTxMeta.type = TransactionEnvelopeType.legacy;
   }
 
   return formattedTxMeta;

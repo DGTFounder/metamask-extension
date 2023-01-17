@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { tap } from 'lodash';
 import { formatCurrency } from '../helpers/utils/confirm-tx.util';
 import { getCurrentCurrency } from '../selectors';
 import {
