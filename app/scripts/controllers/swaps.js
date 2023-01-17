@@ -756,8 +756,7 @@ export default class SwapsController {
 
       const totalEthCost = totalWeiCost
         .toDenomination(EtherDenomination.ETH)
-        .round(6)
-        .toString();
+        .round(6).value;
 
       // The total fee is aggregator/exchange fees plus gas fees.
       // If the swap is from the selected chain's default token, subtract
@@ -767,8 +766,7 @@ export default class SwapsController {
         ? totalWeiCost
             .minus(new Numeric(sourceAmount, 10))
             .toDenomination(EtherDenomination.ETH)
-            .round(6)
-            .toString()
+            .round(6).value
         : totalEthCost;
 
       const decimalAdjustedDestinationAmount = calcTokenAmount(

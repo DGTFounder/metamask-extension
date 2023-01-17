@@ -346,7 +346,11 @@ export class Numeric {
    * @param numeric
    */
   add(numeric: Numeric) {
-    return new Numeric(this.value.add(numeric.value), this.base);
+    return new Numeric(
+      this.value.add(numeric.value),
+      this.base,
+      this.denomination,
+    );
   }
 
   /**
@@ -357,7 +361,11 @@ export class Numeric {
    * @param numeric
    */
   minus(numeric: Numeric) {
-    return new Numeric(this.value.minus(numeric.value), this.base);
+    return new Numeric(
+      this.value.minus(numeric.value),
+      this.base,
+      this.denomination,
+    );
   }
 
   times(multiplier: Numeric) {
